@@ -13,6 +13,8 @@ import json
 from typing import Optional
 from app.core.config import settings
 from app.services.vending_services import vend_meter
+from app.services.mpesa_transaction_service import process_mpesa_transaction
+
 # IMPORTANT: DO NOT use "mpesa" in the prefix!
 # Use a different word that doesn't trigger Safaricom's keyword filter
 mpesa_router = APIRouter(prefix="/api/daraja", tags=["Daraja"])  # Changed from /api/mpesa
@@ -102,23 +104,9 @@ async def c2b_confirmation(request: Request, db: Session = Depends(get_db)):
         logger.info(f"Data: {json.dumps(data, indent=2)}")
         
         # Save transaction
-        transaction = MpesaTransaction(
-            transaction_type=data.get('TransactionType'),
-            trans_id=data.get('TransID'),
-            trans_time=data.get('TransTime'),
-            trans_amount=float(data.get('TransAmount', 0)),
-            business_short_code=data.get('BusinessShortCode'),
-            bill_ref_number=data.get('BillRefNumber'),
-            msisdn=data.get('MSISDN'),
-            first_name=data.get('FirstName', ''),
-            middle_name=data.get('MiddleName', ''),
-            last_name=data.get('LastName', ''),
-            org_account_balance=data.get('OrgAccountBalance'),
-        )
+        transaction = process_mpesa_transaction(db,data)
+       
         
-        db.add(transaction)
-        db.commit()
-        db.refresh(transaction)
         
         logger.info(f"💾 Transaction saved: ID={transaction.id}, TransID={transaction.trans_id}")
         

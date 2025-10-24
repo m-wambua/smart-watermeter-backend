@@ -5,7 +5,8 @@ from app.models.vending import VenderToken
 from app.schemas.vending_schema import VendedTokenCreate
 from app.services.sms_service import SMSService
 from app.services.sms_services import get_sms_service
- 
+from app.services.aggregate_service import update_on_vend
+
 
 
 def generate_token_string()->str:
@@ -44,4 +45,11 @@ def vend_meter(db:Session, meter_number:str, phone_number:str, amount:float):
     )
     sms_service.send_sms(phone_number, message)
     
+    
+    update_on_vend(db,meter_number=vended_data.meter_number,
+                   units=vended_data.units,
+                   amount=vended_data.amount,
+                   token=vended_data.token,
+                   phone_number=vended_data.phone_number,
+                   token_time=vended_data.timestamp)
     return vended_data
